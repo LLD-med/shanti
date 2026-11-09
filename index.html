@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Новогодняя жеребьёвка</title>
+<style>
+  :root{
+    --cream:#fff8f3; --ice:#e9f1fb; --blush:#fbe6ec;
+    --ink:#4f4663; --muted:#8b839c;
+    --rose:#e9a7b4; --rose-d:#d98c9c; --blue:#bcd3ee; --blue-d:#9fbce0; --gold:#e7c37a; --white:#ffffff;
+    --radius:26px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(900px 500px at 10% 0%, #fde9ef 0%, transparent 60%),
+      radial-gradient(800px 500px at 100% 100%, #dfeafa 0%, transparent 60%),
+      linear-gradient(170deg,var(--cream) 0%,var(--ice) 55%,var(--blush) 100%);
+    background-attachment:fixed;
+    display:flex;flex-direction:column;align-items:center;
+    padding:max(26px,env(safe-area-inset-top)) 16px 60px;
+  }
+  canvas#snow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+  .wrap{width:100%;max-width:560px;position:relative;z-index:1;text-align:center}
+  h1{
+    font-family:Georgia,"Times New Roman",serif;font-weight:600;letter-spacing:-.01em;
+    font-size:clamp(28px,7vw,40px);margin:6px 0 8px;color:#4a3f61
+  }
+  .lead{color:var(--muted);margin:0 auto 22px;font-size:16px;line-height:1.5;max-width:420px}
+  .card{background:rgba(255,255,255,.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    border:1px solid #fff;border-radius:var(--radius);padding:22px 20px;
+    box-shadow:0 18px 50px rgba(120,100,150,.16)}
+  .q{display:block;font-weight:700;font-size:18px;margin-bottom:14px}
+  .row{display:flex;gap:10px;justify-content:center}
+  input#nameInput{
+    flex:1;min-width:0;max-width:300px;font:inherit;font-size:18px;color:var(--ink);text-align:center;
+    background:#fff;border:1.5px solid #ecdfe7;border-radius:999px;padding:13px 18px;outline:none;
+    box-shadow:0 4px 12px rgba(120,100,150,.08);transition:border-color .15s,box-shadow .15s
+  }
+  input#nameInput:focus{border-color:var(--rose);box-shadow:0 0 0 4px #e9a7b433}
+  input#nameInput.bad{border-color:#d98c9c;animation:nudge .3s}
+  @keyframes nudge{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  .ok{
+    appearance:none;cursor:pointer;font:inherit;font-size:17px;font-weight:700;color:#fff;
+    background:linear-gradient(180deg,#e9a7b4,#d98c9c);border:0;border-radius:999px;padding:13px 24px;
+    box-shadow:0 8px 20px rgba(217,140,156,.35);transition:transform .08s,filter .15s
+  }
+  .ok:hover{filter:brightness(1.05)} .ok:active{transform:translateY(1px)}
+  .small{color:var(--muted);font-size:13px;margin-top:14px;line-height:1.45}
+
+  /* ---- шапка ---- */
+  .stage{position:relative;height:400px;margin:6px auto 0;max-width:360px}
+  .hat{position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:300px;cursor:pointer;
+    user-select:none;-webkit-tap-highlight-color:transparent;transition:transform .15s}
+  .hat:active{transform:translateX(-50%) scale(.98)}
+  .hat.shake{animation:shake .14s infinite}
+  @keyframes shake{0%{transform:translateX(-50%) rotate(0)}25%{transform:translateX(-52%) rotate(-2deg)}50%{transform:translateX(-48%) rotate(2deg)}75%{transform:translateX(-51%) rotate(-1deg)}100%{transform:translateX(-49%) rotate(1deg)}}
+  .hat svg{display:block;width:100%;height:auto;filter:drop-shadow(0 18px 24px rgba(120,100,150,.22))}
+  .tap{position:absolute;left:0;right:0;bottom:-30px;color:var(--muted);font-size:15px}
+  .slip{
+    position:absolute;left:50%;bottom:210px;width:250px;transform:translate(-50%,0) scale(.25) rotate(-8deg);
+    opacity:0;background:#fff;border-radius:14px;padding:18px 16px;
+    box-shadow:0 20px 50px rgba(120,100,150,.25);pointer-events:none;
+    background-image:repeating-linear-gradient(0deg,transparent 0 27px,#f3eef6 27px 28px);
+    transition:transform .9s cubic-bezier(.2,1.3,.4,1),opacity .4s,bottom .9s cubic-bezier(.2,1.3,.4,1)
+  }
+  .slip.out{opacity:1;bottom:285px;transform:translate(-50%,0) scale(1) rotate(-2deg)}
+  .slip .kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:700;opacity:0;transition:opacity .4s .5s}
+  .slip .costume{font-family:Georgia,serif;font-size:clamp(28px,7vw,38px);color:#4a3f61;margin:6px 0 2px;line-height:1.15;opacity:0;transform:translateY(8px);transition:opacity .5s .6s,transform .5s .6s}
+  .slip.out .kicker,.slip.out .costume{opacity:1;transform:none}
+  .after{opacity:0;transition:opacity .5s 1.3s;margin-top:4px}
+  .after.show{opacity:1}
+  .after .secret{color:var(--ink);font-size:16px;line-height:1.5;max-width:380px;margin:0 auto}
+  .star{color:var(--gold)}
+  .after .remember{color:#b3acc2;font-size:13px;line-height:1.45;max-width:360px;margin:16px auto 0}
+  .hidden{display:none !important}
+  .err{color:#c86c7e;font-weight:600}
+  .foot{color:#b5adc4;font-size:12px;margin-top:28px}
+</style>
+</head>
+<body>
+<canvas id="snow"></canvas>
+<div class="wrap">
+  <h1 id="title">Новогодняя жеребьёвка</h1>
+  <p class="lead" id="lead">Как и в прошлом году, каждая тянет из шапки бумажку с костюмом. Бумажки не повторяются.</p>
+
+  <noscript>
+    <section class="card" style="margin-top:6px">
+      <div style="font-weight:700;margin-bottom:8px">Это только предпросмотр файла</div>
+      <div class="small" style="margin:0">Открой ссылку на сайт в браузере, например в Safari или Chrome, и шапка появится.</div>
+    </section>
+  </noscript>
+
+  <!-- ввод имени -->
+  <section id="pick" class="card hidden">
+    <label class="q" for="nameInput">Как тебя зовут?</label>
+    <form class="row" id="nameForm" autocomplete="off">
+      <input id="nameInput" type="text" inputmode="text" placeholder="Имя" maxlength="40" autocomplete="off" autocapitalize="words">
+      <button class="ok" type="submit">Ок</button>
+    </form>
+  </section>
+
+  <!-- шапка -->
+  <section id="draw" class="hidden">
+    <div class="stage">
+      <div class="slip" id="slip">
+        <div class="kicker">Твой костюм</div>
+        <div class="costume" id="costume"></div>
+      </div>
+      <div class="hat" id="hat" role="button" aria-label="Вытянуть бумажку">
+        <svg viewBox="0 0 300 262" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#c6daf3"/><stop offset="1" stop-color="#a4bfe4"/>
+            </linearGradient>
+            <linearGradient id="cuff" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#fffdf9"/><stop offset="1" stop-color="#f3ebe6"/>
+            </linearGradient>
+            <pattern id="knit" width="16" height="12" patternUnits="userSpaceOnUse">
+              <path d="M0 10 L4 2 L8 10 L12 2 L16 10" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+            </pattern>
+            <clipPath id="body"><path d="M26 70 C26 150 92 214 150 214 C208 214 274 150 274 70 Z"/></clipPath>
+            <clipPath id="hole"><ellipse cx="150" cy="70" rx="110" ry="22"/></clipPath>
+          </defs>
+          <!-- тело шапки (перевёрнутая) -->
+          <path d="M26 70 C26 150 92 214 150 214 C208 214 274 150 274 70 Z" fill="url(#g1)"/>
+          <g clip-path="url(#body)">
+            <rect x="0" y="60" width="300" height="160" fill="url(#knit)"/>
+            <!-- узорная полоска -->
+            <path d="M30 118 C80 134 220 134 270 118 L270 134 C220 150 80 150 30 134 Z" fill="#f6dfe6" opacity=".9"/>
+            <path d="M46 126 l8 -6 l8 6 l8 -6 l8 6 l8 -6 l8 6 l8 -6 l8 6 l8 -6 l8 6 l8 -6 l8 6 l8 -6 l8 6 l8 -6 l8 6 l8 -6 l8 6 l8 -6 l8 6 l8 -6 l8 6 l8 -6 l8 6 l8 -6 l8 6" fill="none" stroke="#e9a7b4" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>
+            <!-- снежинки на шапке -->
+            <g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".85">
+              <g transform="translate(96 172)"><path d="M0 -8V8M-8 0H8M-6 -6L6 6M-6 6L6 -6"/></g>
+              <g transform="translate(204 172) scale(.8)"><path d="M0 -8V8M-8 0H8M-6 -6L6 6M-6 6L6 -6"/></g>
+              <g transform="translate(150 190) scale(.6)"><path d="M0 -8V8M-8 0H8M-6 -6L6 6M-6 6L6 -6"/></g>
+            </g>
+          </g>
+          <!-- помпон -->
+          <circle cx="150" cy="230" r="26" fill="#f8e7ec"/>
+          <g fill="#fff"><circle cx="139" cy="221" r="9"/><circle cx="161" cy="226" r="8"/><circle cx="150" cy="240" r="8"/><circle cx="134" cy="238" r="6"/><circle cx="166" cy="242" r="6"/></g>
+          <!-- внутренняя тень отверстия -->
+          <ellipse cx="150" cy="70" rx="110" ry="22" fill="#8ea9d2"/>
+          <!-- бумажки внутри -->
+          <g id="slips" clip-path="url(#hole)" fill="#fff" stroke="#e7e0ee">
+            <rect x="92" y="42" width="46" height="30" rx="4" transform="rotate(-18 115 57)"/>
+            <rect x="128" y="38" width="50" height="30" rx="4" transform="rotate(8 153 53)"/>
+            <rect x="166" y="44" width="46" height="30" rx="4" transform="rotate(-6 189 59)"/>
+            <rect x="110" y="56" width="44" height="26" rx="4" transform="rotate(22 132 69)"/>
+            <rect x="150" y="58" width="44" height="26" rx="4" transform="rotate(-14 172 71)"/>
+          </g>
+          <!-- отворот-резинка -->
+          <ellipse cx="150" cy="70" rx="128" ry="32" fill="none" stroke="url(#cuff)" stroke-width="30"/>
+          <ellipse cx="150" cy="70" rx="128" ry="32" fill="none" stroke="#e6dbd6" stroke-width="30" stroke-dasharray="3 7" opacity=".55"/>
+          <ellipse cx="150" cy="70" rx="113" ry="17" fill="none" stroke="#f1e8e3" stroke-width="2"/>
+          <ellipse cx="150" cy="70" rx="143" ry="47" fill="none" stroke="#f1e8e3" stroke-width="2"/>
+        </svg>
+        <div class="tap" id="tap">нажми на шапку</div>
+      </div>
+    </div>
+    <div class="after" id="after">
+      <p class="secret">Никому не рассказывай до самого вечера <span class="star">✦</span><br>Увидимся в «Пушкине» 20 декабря в 18:00!</p>
+      <p class="remember">Бумажка запомнится в этом браузере. Если забудешь костюм, открой страницу снова с этого же устройства и в этом же браузере.</p>
+    </div>
+  </section>
+
+  <section id="msg" class="card hidden"><div id="msgText"></div></section>
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+(function(){
+  const DATA = "m5lZ_X2kKwpCw8Gt7bjAheKGvljdi87nwKGfCFPUrLf2h7PNOhHE7kNdgR-sYLtTM48bBGBAMpUFW9JxjpojqcUIAYr3wqsHs4TxjTIOXQRV53MI5GZjqfuKlGsEaTDvtMz75Qv7Hi5zBHG3a01yul5WavsOI3QnG4NuVkL4ZLCzqAUV6YCWKMrUG7KmPzprsjr-jPZEAJLTWR3253sASV11Z3ef1yLYHk90fA1sh7idLv9WtIHEJ8KqxkeJQkPWeJp5Vnxb2SUKmASgl63CQyTK05elqCeEndBRCeCqPvS4yfkTtnIPBvkZ_Lik4s1aRhVZwozbEwf-kN8PPzni_GGGmzPAJG-KK6-Ocz4Lzkd4Cd4xnlOQwuWJjpFvAEIsWwBsy68Y5sotLPykoOt6LJAhurojovJWWu1eg_BnhyAfvoikbuf45aKOaPDTrNUSnwN1bHeFQpO34645WrUf5zaMB25zxjDBxUIZmflKJWNCvOHDXPPBqrGF0lCXoQtxAu9vsLZjOeoZrZPxWSyLAsyU9lc514LsdwR3J9HyJ9iBn2qXLBPCAp14rQTdrIQWWko271DcgsB5cv8fCrYdcfERXxYB9mmuTUH1sLqfnwfiDNwilZm9aE8eto9-oCAhcZ2zHWZ6YkHwhSIHhfGpmCJnUaa6wAhzBIAEUnpnFQyH5X5no_NAZ0um2UEGxzHokxNbllyDpA2VpMxHshNHuZbr8iOd_I2vG4WSMVxRyBe9Zx6K3BQSgpjqRHMusZP6dqzLn-S_0qDgRBWbaWlUjfaQQ0QsLvAP1hiWSAz4ZQtU6TK16oGnCWnsyVaac4RgV8Gh5xPBwev_ZKvmY5gaaF3ZCHfW4G8lDnmAcIAZZ1DrU1zqi8iNLH_x9dk8M9benuC2YpgePp7tOKy5tdksJR21hMIhPOsxBcy4YiQ5ZySB3dlHBJXYBpQSwgAzI_f45hkJr292xoHEsBl-75JtkSt3g44n096KqOeLN2NZ55gmmY1kH1Hxv1nUspVVSiMvLsR1fVP8I9Evpc4LMv1QhW1fzWlsEY0xeSZnups_W0jtiN2pf1jSE-w96wQ85MmNCIzJ5JVIfOkaR2DxcRUl73YafnVezNZdtEhb3nn0cVrSXU47R3yI8f7BL_wOzM5JaQZmK5L07Qsza4f28RT-cu7MabG5k5127gx8rigN0AoHCBcNfM1UYqRUAVwbyvC7WbqxUBbH-mab4AIu3K5Nkozk4QCCsYAsR8dW2dX5HnWCP1lU6rc3LoXKNP5qs2YDtYy9zJ5YUfiaeX12fWqvnHe4vkixZIm08dRJcFc9GEqepRwClFAU7LM_tYZOddzxUIYf16qSjE1Yjd31Dja0BzLZa9IMmDtBRvTci_p3u5Jwc9Ru8QCH9Awcf5ivQY-zfLfvlsu-bvMsyr0wliQ1zIwrm-HXn32l4jgOZNEj_7anMIinBO6qn97tPnTR-XV2bFDgb1-GqcN2wtFxl9WoipC9jFpBD3PLPZLSEgKU1lVwhNprlnRSeApiicpX23YoBlM5rG83DIJsISovK68K3gXAXTN1Km8eKpOT4CQleeiATdiCyojVqo5cnz4AQR923LEXSbSPQrzCp5NZcsz_bQ8yf0oxOvVqpxhM9frA5wFTUyxBCIUwZZ3rpVLIswtb2pxlLeu0Hz9c_SqboBdaSicBvVsdYMKcpceLOYBGbTz6EABcBMnWeRpfeB5v2zrvf3nPV1fvQcBdbU3nSRI_3qToi24qOEdF-Jb32T28S6x2UxM2bdb3Rb9O8DnNLNhWL1Vt2k0zblNZslNlG6UMWzBm25dNHzefdWFqnDFCsXxuRRAC8W4vRi9RMRtQf7zySzrUWwZWdEnvvlHXflL1UJ4UUPuR7BQy03Ur2y7pVI0gUXXnSY_8YpYEFnnSPvpu3XgQUs8wHRTFXcyJANFFILNCzKbLGylsQ0HpiIkbdd0PgpUhJ6eL8Ygc7XcaZwNeziiAl3CqWt_FRLoTf08ncBr5-SsPiLIenqVqJPzKpsB2IwFZvVtBcGNJcFT9uTiCNPEhUAViiRK9qUjnwaduUCZRQ4pDJ7jkWAcMvv20J12rnqN6sNuYjIiZLqnqpa-IBDTSD8lv_PibvJyFFc12n2NWxVkG5kBhXiqBvzmAI_-BpN754B61p_jNhY5TpeCGxHvY2ksVEG-wm_KMNf1l3uCnhwmXvfxVuBQpG7TTW02jtK7zlAs5u6TfhEL-U-iNv1cKwKuLBCl0Knq_7duJk7D0V37vEu3bNQ-3ZxVHXbRBsISTtCblYr6xwXecFiOXE6l8iD4x5sNgGu7lbjCgSbgv4gRJPAZHfK24GsVq78VcDHkjaQ70kogTk7ItRPu_6q6x0fw7np_wQ8Q0GRi02IophifuHjNPfYQmLPDSuuZKvXuXqw2gTcVEirI0K6JRGmocaWE88Qe1tEG7JG-wg2ELvoCmjumktVuuln1sA6H01Qd07pGp0tMV0lhYU7lziahUZZTMsvYW_ciByOBABM0ROOlINrg18pvtkUZAQbWzUNepXU6eVXJkyhTmzCZzQ6x6wvvVKbtfgIapCUc5RVEqWZJpTuR_du-Tq5VYVQltjsW1v5BTwwbh4wZKC7xyuPJgcEeXouJ32b4P4OgDq7N8A-xNqwoGai48HpoCESUMwKZgaTsSnSmOOiEhrqAoRCoo2tQMlg4ETGP5ypfzcXcNHQbnotQKPlRBesArQ0JgXwzVrLbWWFgXC9OF8DgQ4gibfpUaBQiQqLi_A5bEC2VgY3faU4giq4rryRArM7co4zDkGVhKJNM9kdWC8aqSMm8_li9uAJ0r6h8DXIYH-WuMSrZG4Wsv7CgaxTDpsowGIqm-VzLGdHHiLJ0YtCaIU88gDLITkf7Qf-a-ADCSC_SVR37POvvzNT50haoh9IIJgWqmtiZv2M2E_ouZF1_4Yz-lTe5tuCMLMkjYDK7l8VXZkWA9EvEXDa7lrQDbhTlMcyrhFUOw4_i7jooilgK156ur8jJiTdDouPnMeNFSGVTPkjDRL8SEuXMqUEXybeQO39lvS6Bm-BG_lUyAlDkez53n9bC9ys-6TPixUme48FxfAFaVJ4RDdBDsMZU2bUUROOEmkuN805QY9JzhZtwjbzjzu80K_cen7N0Za4sx6rwN4E0-atnOdU7N6jLjA4VYu6ZdTPvSncZf3qV3jnQN205S8yBcIzACWdw1JemyfCUph4ZX6Vtrkae6OPrCLrPSjiRMNflWMFbhu2EZi8eOfNoArABM00AJiskoyDv7QJgZHVOYAtqMEysCaQlIWKn3EA0C6_jTr1pG12rh_Xr_ofa3pob3iNM2EvjGh0S59aVrZ_XtQUBjEn1QwMzQY_GXzzqcuHBYr0X-xP0smZs07zitdAbouM7qkvqX1y9yHJ09IY2PfJf7Yq1H2uTDkB7Qqp8AaRbeo0-i94H9AqtOiVBBDKcV6fmApBy5onOjxdDz_9biB3uF0HwWVTCguTDtMnaLcCZQPNlqV5peKFYts1OfNdRkYMc92kTPFpCFyXTdGZR0YmbWbmejt9q9FYvNcgUeR3lvOGWIWUr8iG6I9DAwFdEkG8wNw_EWdVHhsYJBuRYVuHC1FEUlOpQKQIynLMQ3nuX33miLN3MhU4CE0jVS48HvIYp_rWYAT1J5S_yG5zd-EGXxDFRHsLHO2hJUh-lRyPUzQ415He_5wsQpxm09P_hX1tAvbOqJa2hye0vKyJZ1YAmGSNqcx5CK6O46QawRGN-IetTXrheAmAtan1CBD0YImjgaLwbXTWnJxepQIzwNd2xSoVIw6DMLDNa1x0-j8du2g_NngKMkKVVlvC8F4nJFh7Yt1U6jV-4GkNpuvwfo9yhvcjvlUf_jaytylP8PhsxVjaf4vCP9FT3pO97nUpDSOs16FI1gWLqT1XGt73H0SVSICMlQROSkxhQyXvIv8DxsLUpDlD0pCoslvqIKnxPsLqt3Rj1qay-Igg";          // зашифрованное распределение имя → костюм
+  const ALLOW_PICK = true; // можно ли выбрать имя на общей ссылке
+
+  // ---------- декодирование ----------
+  function keystream(seed, n){
+    const out = new Uint8Array(n); let s = seed >>> 0 || 1;
+    for (let i=0;i<n;i++){ s = (Math.imul(s, 1664525) + 1013904223) >>> 0; out[i] = (s >>> 24) & 255; }
+    return out;
+  }
+  function unb64url(str){
+    str = str.replace(/-/g,'+').replace(/_/g,'/'); while(str.length%4) str+='=';
+    const s = atob(str); const out = new Uint8Array(s.length);
+    for (let i=0;i<s.length;i++) out[i]=s.charCodeAt(i); return out;
+  }
+  function decode(str){
+    const raw = unb64url(str);
+    const seed = (raw[0]<<24|raw[1]<<16|raw[2]<<8|raw[3])>>>0;
+    const ks = keystream(seed, raw.length-4);
+    const data = new Uint8Array(raw.length-4);
+    for (let i=0;i<data.length;i++) data[i] = raw[4+i] ^ ks[i];
+    return JSON.parse(new TextDecoder().decode(data));
+  }
+  let MAP = {};
+  try { MAP = decode(DATA); } catch(e) {}
+  const norm = s => (s||'').toLowerCase().replace(/ё/g,'е').replace(/\s+/g,' ').trim();
+  const SPARES = Array.isArray(MAP._spare) ? MAP._spare : [];
+  const ALIAS = (MAP._alias && typeof MAP._alias === 'object') ? MAP._alias : {};
+  const TEST = (MAP._test && MAP._test.name) ? MAP._test : null;
+  if (TEST) MAP[TEST.name] = TEST.costume;
+  const KNOWN = Object.keys(MAP).filter(k => k[0] !== '_');
+  const INDEX = {}; KNOWN.forEach(k => INDEX[norm(k)] = k); Object.keys(ALIAS).forEach(a => INDEX[norm(a)] = ALIAS[a]);
+  // все формы (имя + варианты) → каноническое имя, для нечёткого поиска
+  const FORMS = Object.keys(INDEX).map(f => ({form: f, name: INDEX[f]}));
+  function lev(a,b){
+    const m=a.length,n=b.length; if(!m) return n; if(!n) return m;
+    let prev=Array.from({length:n+1},(_,j)=>j), cur=new Array(n+1);
+    for(let i=1;i<=m;i++){ cur[0]=i;
+      for(let j=1;j<=n;j++) cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+(a[i-1]===b[j-1]?0:1));
+      [prev,cur]=[cur,prev]; }
+    return prev[n];
+  }
+  function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+  const cap = s => s ? s[0].toUpperCase()+s.slice(1) : s;
+  // Возвращает {display, costume}. Ошибок не бывает: любое имя получает бумажку.
+  function resolve(raw){
+    const q = norm(raw);
+    if (INDEX[q]) return {display: INDEX[q], costume: MAP[INDEX[q]], test: !!TEST && INDEX[q] === TEST.name};
+    if (q){
+      // похожее имя: опечатка или уменьшительное (Машка → Маша)
+      let best=null, bestScore=1e9;
+      for (const {form, name: k} of FORMS){
+        const kn = form;
+        const d = lev(q, kn);
+        const tol = Math.min(q.length, kn.length) >= 6 ? 2 : 1;   // допуск по короткому из двух, иначе «ксюша» ≈ «катюша»
+        let score = 1e9;
+        if (d <= tol && q[0] === kn[0] && !(d === 1 && q.length === kn.length && kn.length <= 4)) score = d;   // в коротких формах замена буквы — другое имя (Нина ≠ Ника, Лида ≠ Лиза)                   // опечатка (первая буква совпадает)
+        else if (kn.length >= 3 && q.length >= 3 && kn.startsWith(q)) score = 3 + (kn.length - q.length) / 100;   // начало длинной формы
+        else if (kn.length >= 3 && q.startsWith(kn + ' ')) score = 3.5 + (q.length - kn.length) / 100;             // форма + фамилия
+        else {
+          // короткие имена (Оля, Аня) в уменьшительных меняют окончание: Оленька, Анечка
+          // только для коротких форм и ненамного длиннее их, иначе «Ангелина» → Аня, «Алёна» → Алексис
+          const pre = kn.length <= 3 ? 2 : 3;
+          if (kn.length <= 5 && q.length >= 4 && q.length <= kn.length + 3 && q.startsWith(kn.slice(0, pre))) score = 5 + (pre === 2 ? 1 : 0);
+        }
+        if (score < bestScore){ bestScore=score; best=k; }
+      }
+      if (best && bestScore < 1e9) return {display: best, costume: MAP[best], test: !!TEST && best === TEST.name};
+    }
+    // незнакомое имя: один из запасных костюмов, стабильно для одного и того же написания
+    const pool = SPARES.length ? SPARES : KNOWN.map(k=>MAP[k]);
+    const costume = pool[hashStr(q || 'гостья') % pool.length];
+    return {display: cap((raw||'').trim()) || 'подруга', costume};
+  }
+
+  // ---------- снег ----------
+  const cv=document.getElementById('snow'), ctx=cv.getContext('2d');
+  let flakes=[], burst=[];
+  function resize(){ cv.width=innerWidth*devicePixelRatio; cv.height=innerHeight*devicePixelRatio; ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); }
+  addEventListener('resize',resize); resize();
+  for (let i=0;i<70;i++) flakes.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:1+Math.random()*2.6,v:.3+Math.random()*.7,w:Math.random()*Math.PI*2});
+  function sparkle(){
+    const cols=['#e9a7b4','#bcd3ee','#e7c37a','#ffffff','#cfe8dc'];
+    for (let i=0;i<160;i++) burst.push({x:innerWidth/2+(Math.random()-.5)*60,y:innerHeight*.4,vx:(Math.random()-.5)*11,vy:-Math.random()*13-4,
+      s:4+Math.random()*6,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.25,c:cols[i%cols.length],life:0});
+  }
+  (function loop(){
+    ctx.clearRect(0,0,innerWidth,innerHeight);
+    ctx.fillStyle='rgba(255,255,255,.9)';
+    for (const f of flakes){
+      f.y+=f.v; f.w+=.01; f.x+=Math.sin(f.w)*.3;
+      if (f.y>innerHeight+5){ f.y=-5; f.x=Math.random()*innerWidth; }
+      ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.fill();
+    }
+    burst = burst.filter(p=>p.life<240 && p.y<innerHeight+30);
+    for (const p of burst){
+      p.vy+=.3; p.vx*=.99; p.x+=p.vx; p.y+=p.vy; p.r+=p.vr; p.life++;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r); ctx.globalAlpha=p.life>180?(240-p.life)/60:1;
+      ctx.fillStyle=p.c; ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*1.4); ctx.restore();
+    }
+    requestAnimationFrame(loop);
+  })();
+
+  // ---------- состояние ----------
+  const $=id=>document.getElementById(id);
+  const show=id=>$(id).classList.remove('hidden'), hide=id=>$(id).classList.add('hidden');
+  const LS='ny-draw-v1';
+  const saved = (()=>{ try{ return JSON.parse(localStorage.getItem(LS)||'null'); }catch(e){ return null; } })();
+
+  function message(html){ $('msgText').innerHTML=html; show('msg'); }
+
+  function startDraw(raw, already){
+    const {display, costume, test} = resolve(raw);
+    hide('pick'); show('draw');
+    $('title').textContent = test ? 'Проверка связи' : `Привет, ${display}!`;
+    if (test){
+      $('after').innerHTML = '<p class="secret">Это проверочная бумажка, она не запоминается.<br>Обнови страницу и впиши своё имя, чтобы тянуть по-настоящему.</p>';
+    }
+    $('lead').textContent = already ? 'Ты уже тянула. Вот твоя бумажка, на всякий случай ещё раз.' : 'В шапке лежит твой костюм на этот Шанти Новый год. Тяни!';
+    const hat=$('hat'), slip=$('slip');
+    let done=false;
+    function reveal(fast){
+      $('costume').textContent = costume;
+      hat.classList.remove('shake'); $('tap').textContent='';
+      document.querySelector('#slips').style.opacity='.35';
+      slip.classList.add('out');
+      setTimeout(()=>{ $('after').classList.add('show'); if(!fast){ sparkle(); setTimeout(sparkle,400); } }, fast?0:500);
+    }
+    hat.addEventListener('click', ()=>{
+      if (done) return; done=true;
+      $('tap').textContent='шуршим бумажками…';
+      hat.classList.add('shake');
+      if (!test){ try{ localStorage.setItem(LS, JSON.stringify({name: raw, t:Date.now()})); }catch(e){} }
+      setTimeout(()=>reveal(false), 1700);
+    });
+    if (already){ $('tap').textContent='нажми, чтобы посмотреть ещё раз'; }
+  }
+
+  // личная ссылка: #<токен> с именем
+  const hash = location.hash.slice(1);
+  if (hash){
+    let p=null; try{ p=decode(hash); }catch(e){}
+    if (p && p.n){ startDraw(p.n, saved && saved.name===p.n); return; }
+    message('<span class="err">Ссылка открылась не целиком.</span><br>Попроси прислать её ещё раз.');
+    return;
+  }
+
+  // общая ссылка
+  if (saved && saved.name){
+    if (resolve(saved.name).test){ try{ localStorage.removeItem(LS); }catch(e){} }   // старая проверка не считается
+    else { startDraw(saved.name, true); return; }
+  }
+  if (!ALLOW_PICK){ message('Открой свою личную ссылку, которую тебе прислали. По ней и тянем.'); return; }
+  const form=$('nameForm'), input=$('nameInput');
+  form.addEventListener('submit', e=>{
+    e.preventDefault();
+    if (!input.value.trim()){ input.classList.remove('bad'); void input.offsetWidth; input.classList.add('bad'); input.focus(); return; }
+    startDraw(input.value, false);
+  });
+  show('pick');
+  setTimeout(()=>input.focus(), 300);
+})();
+</script>
+</body>
+</html>
